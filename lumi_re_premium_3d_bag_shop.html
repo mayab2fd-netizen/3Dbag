@@ -114,6 +114,75 @@
             display: flex;
             justify-content: flex-end;
         }
+
+        /* ===== Cart Drawer ===== */
+        #cart-drawer {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: 100%; max-width: 420px;
+            background: #fff;
+            box-shadow: -8px 0 32px rgba(0,0,0,0.12);
+            z-index: 60;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            border-left: 1px solid #e7e5e4;
+        }
+        #cart-drawer.open { transform: translateX(0); }
+        #cart-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 55;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #cart-backdrop.open { opacity: 1; pointer-events: auto; }
+        .cart-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.875rem 0;
+            border-bottom: 1px solid #f5f5f4;
+        }
+        .cart-qty-btn {
+            width: 30px; height: 30px; border-radius: 8px;
+            border: 1px solid #d6d3d1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+            background: #fff; color: #44403c;
+        }
+        .cart-qty-btn:hover { background: #f5f5f4; }
+        .cart-qty-btn:active { transform: scale(0.92); }
+        @keyframes cartBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); }
+            100% { transform: scale(1); }
+        }
+        .cart-bounce { animation: cartBounce 0.4s ease; }
+
+        /* ===== Mobile Navigation ===== */
+        .mobile-nav-overlay {
+            position: fixed; inset: 0; z-index: 45;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .mobile-nav-overlay.open { opacity: 1; pointer-events: auto; }
+        .mobile-nav-panel {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: 280px; background: #fff; z-index: 46;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 1.75rem 1.5rem;
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+        .mobile-nav-panel.open { transform: translateX(0); }
+
+        /* ===== Mobile Responsive ===== */
+        @media (max-width: 767px) {
+            #canvas-container { touch-action: none; }
+            .color-palette-mobile { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
     </style>
 </head>
 <body class="bg-stone-50 text-stone-900 selection:bg-amber-100 selection:text-amber-900 min-h-screen flex flex-col">
@@ -121,12 +190,16 @@
     <!-- ================================================ -->
     <!-- 상단 네비게이션 바 (Header Navigation) -->
     <!-- ================================================ -->
-    <!-- Header Navigation -->
     <header class="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-200/80 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <span class="text-2xl font-black tracking-widest bg-gradient-to-r from-stone-900 via-amber-900 to-stone-800 bg-clip-text text-transparent">LUMIÈRE</span>
-                <span class="px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 rounded-full border border-amber-200/60">AI Integrated</span>
+        <div class="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-20 flex items-center justify-between">
+            <!-- Mobile Menu Button -->
+            <button onclick="toggleMobileNav()" class="md:hidden p-2 -ml-1 rounded-lg hover:bg-stone-100 transition-colors" aria-label="메뉴">
+                <i class="fa-solid fa-bars text-stone-700"></i>
+            </button>
+
+            <div class="flex items-center space-x-2 md:space-x-3">
+                <span class="text-xl md:text-2xl font-black tracking-widest bg-gradient-to-r from-stone-900 via-amber-900 to-stone-800 bg-clip-text text-transparent">LUMIÈRE</span>
+                <span class="hidden md:inline px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 rounded-full border border-amber-200/60">AI Integrated</span>
             </div>
 
             <nav class="hidden md:flex items-center space-x-8 font-medium text-sm text-stone-600">
@@ -134,14 +207,30 @@
                 <a href="#popular" class="hover:text-amber-800 transition-colors">POPULAR</a>
             </nav>
 
-            <div class="flex items-center space-x-4">
-                <div class="relative cursor-pointer p-2 rounded-full hover:bg-stone-100 transition-colors" onclick="showToast('장바구니가 비어 있습니다.')">
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <div id="cart-icon-btn" class="relative cursor-pointer p-2.5 rounded-full hover:bg-stone-100 transition-colors" onclick="toggleCartDrawer()">
                     <i class="fa-solid fa-bag-shopping text-stone-800 text-lg"></i>
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-amber-600 rounded-full"></span>
+                    <span id="cart-badge" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-amber-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none hidden">0</span>
                 </div>
             </div>
         </div>
     </header>
+
+    <!-- Mobile Navigation -->
+    <div id="mobile-nav-overlay" class="mobile-nav-overlay" onclick="toggleMobileNav()"></div>
+    <div id="mobile-nav-panel" class="mobile-nav-panel">
+        <div class="flex items-center justify-between">
+            <span class="text-lg font-black tracking-widest bg-gradient-to-r from-stone-900 via-amber-900 to-stone-800 bg-clip-text text-transparent">LUMIÈRE</span>
+            <button onclick="toggleMobileNav()" class="p-2 rounded-lg hover:bg-stone-100"><i class="fa-solid fa-xmark text-stone-600"></i></button>
+        </div>
+        <nav class="flex flex-col space-y-3 text-sm font-medium text-stone-700 mt-4">
+            <a href="#showcase" onclick="toggleMobileNav()" class="py-2.5 px-3 rounded-xl hover:bg-amber-50 hover:text-amber-800 transition-colors"><i class="fa-solid fa-cube text-amber-600 mr-3"></i>MD PICK 3D</a>
+            <a href="#popular" onclick="toggleMobileNav()" class="py-2.5 px-3 rounded-xl hover:bg-amber-50 hover:text-amber-800 transition-colors"><i class="fa-solid fa-fire text-amber-600 mr-3"></i>POPULAR</a>
+        </nav>
+        <div class="mt-auto pt-6 border-t border-stone-200">
+            <p class="text-[10px] text-stone-400 uppercase tracking-wider">© 2026 Lumière Atelier</p>
+        </div>
+    </div>
 
     <!-- ================================================ -->
     <!-- 메인 콘텐츠 영역 (Main Content Area) -->
@@ -153,7 +242,7 @@
         <!-- ================================================ -->
         <!-- Three.js를 활용한 3D 가방 시각화 및 색상 변경 -->
         <!-- 1. MD 추천 상품 Showcase Section -->
-        <section id="showcase" class="min-h-[88vh] flex flex-col items-center justify-center relative px-6 py-12 max-w-7xl mx-auto">
+        <section id="showcase" class="min-h-[70vh] md:min-h-[88vh] flex flex-col items-center justify-center relative px-4 md:px-6 py-8 md:py-12 max-w-7xl mx-auto">
             <div class="text-center max-w-2xl mb-6">
                 <span class="text-xs font-bold tracking-widest text-amber-700 uppercase bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
                     MD'S SIGNATURE SELECTION
@@ -167,7 +256,7 @@
             </div>
 
             <!-- 3D Canvas Showcase Container -->
-            <div class="w-full max-w-4xl h-[420px] md:h-[480px] bg-gradient-to-b from-stone-100 to-stone-200/60 rounded-3xl shadow-xl overflow-hidden relative border border-stone-200/80 flex items-center justify-center">
+            <div class="w-full max-w-4xl h-[300px] sm:h-[380px] md:h-[480px] bg-gradient-to-b from-stone-100 to-stone-200/60 rounded-2xl md:rounded-3xl shadow-xl overflow-hidden relative border border-stone-200/80 flex items-center justify-center">
                 
                 <div id="canvas-container" class="w-full h-full"></div>
 
@@ -189,7 +278,7 @@
             <!-- Color Palette Selector -->
             <div class="mt-8 flex flex-col items-center gap-3">
                 <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider">Leather Colorway</span>
-                <div class="flex items-center gap-4 bg-white px-6 py-3 rounded-full shadow-md border border-stone-200">
+                <div class="flex items-center gap-3 md:gap-4 bg-white px-4 md:px-6 py-2.5 md:py-3 rounded-full shadow-md border border-stone-200 color-palette-mobile">
                     <button onclick="changeBagColor(0x783e1e, 'Rich Cognac Leather')" title="Cognac Leather" class="w-8 h-8 rounded-full bg-[#783e1e] ring-2 ring-offset-2 ring-transparent focus:ring-amber-700 hover:scale-110 transition-transform shadow-sm"></button>
                     <button onclick="changeBagColor(0x1a1a1a, 'Midnight Obsidian Black')" title="Obsidian Black" class="w-8 h-8 rounded-full bg-[#1a1a1a] ring-2 ring-offset-2 ring-transparent focus:ring-stone-800 hover:scale-110 transition-transform shadow-sm"></button>
                     <button onclick="changeBagColor(0xf4f1ea, 'Ivory Cream Soft Leather')" title="Cream Ivory" class="w-8 h-8 rounded-full bg-[#f4f1ea] border border-stone-300 ring-2 ring-offset-2 ring-transparent focus:ring-stone-400 hover:scale-110 transition-transform shadow-sm"></button>
@@ -238,6 +327,53 @@
         </section>
     </main>
 
+    <!-- ================================================ -->
+    <!-- 장바구니 드로워 (Cart Drawer) -->
+    <!-- ================================================ -->
+    <div id="cart-backdrop" onclick="toggleCartDrawer()"></div>
+    <div id="cart-drawer">
+        <!-- 장바구니 헤더 -->
+        <div class="p-4 md:p-6 border-b border-stone-200 bg-stone-900 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-bag-shopping text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm tracking-wide">장바구니</h3>
+                    <p id="cart-count-text" class="text-[11px] text-stone-400">0개 상품</p>
+                </div>
+            </div>
+            <button onclick="toggleCartDrawer()" class="text-stone-400 hover:text-white p-2 text-lg transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- 장바구니 상품 목록 -->
+        <div id="cart-items-container" class="flex-grow p-4 md:p-6 overflow-y-auto bg-stone-50/50">
+            <div id="cart-empty" class="flex flex-col items-center justify-center h-full text-center py-12">
+                <div class="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-bag-shopping text-2xl text-stone-300"></i>
+                </div>
+                <p class="text-sm font-medium text-stone-500">장바구니가 비어 있습니다</p>
+                <p class="text-xs text-stone-400 mt-1">마음에 드는 가방을 담아보세요</p>
+            </div>
+            <div id="cart-items-list"></div>
+        </div>
+
+        <!-- 장바구니 하단 (총액 + 주문) -->
+        <div id="cart-footer" class="hidden p-4 md:p-6 border-t border-stone-200 bg-white">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-sm font-medium text-stone-600">총 금액</span>
+                <span id="cart-total-price" class="text-lg font-bold text-stone-900">0원</span>
+            </div>
+            <button onclick="showToast('주문이 접수되었습니다! 감사합니다 🎉')" class="w-full py-3.5 bg-stone-900 hover:bg-amber-900 text-white rounded-2xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-[0.98]">
+                주문하기
+            </button>
+            <button onclick="clearCart()" class="w-full mt-2 py-2.5 text-stone-500 hover:text-stone-700 text-xs font-medium transition-colors">
+                장바구니 비우기
+            </button>
+        </div>
+    </div>
 
     <!-- ================================================ -->
     <!-- 토스트 알림 컨테이너 (Toast Notification) -->
@@ -259,7 +395,7 @@
         let scene, camera, renderer, bagGroup, mainBagBody;
         let selectedColorHex = 0x783e1e;
         let selectedColorName = "Rich Cognac Leather";
-        let currentAudio = null;
+        let cart = [];
 
         // Products database (7 initial items + additional for 'More')
         const allProducts = [
@@ -447,20 +583,20 @@
 
             itemsToDisplay.forEach((p) => {
                 const card = document.createElement('div');
-                card.className = "min-w-[260px] md:min-w-[280px] bg-stone-50 p-5 rounded-2xl border border-stone-200/80 hover:shadow-xl transition-all duration-300 snap-start flex flex-col justify-between group";
+                card.className = "min-w-[220px] sm:min-w-[260px] md:min-w-[280px] bg-stone-50 p-4 md:p-5 rounded-2xl border border-stone-200/80 hover:shadow-xl transition-all duration-300 snap-start flex flex-col justify-between group";
                 card.innerHTML = `
                     <div>
-                        <div class="w-full h-48 ${p.bg} mb-4 rounded-xl flex items-center justify-center relative overflow-hidden group-hover:scale-[1.02] transition-transform">
+                        <div class="w-full h-40 md:h-48 ${p.bg} mb-4 rounded-xl flex items-center justify-center relative overflow-hidden group-hover:scale-[1.02] transition-transform">
                             <span class="absolute top-3 left-3 bg-white/90 text-stone-900 text-[10px] font-bold px-2.5 py-1 rounded-full border border-stone-200 shadow-sm">${p.tag}</span>
-                            <i class="fa-solid fa-bag-shopping text-5xl text-stone-400/60 group-hover:text-amber-800/40 transition-colors"></i>
+                            <i class="fa-solid fa-bag-shopping text-4xl md:text-5xl text-stone-400/60 group-hover:text-amber-800/40 transition-colors"></i>
                         </div>
-                        <h3 class="font-bold text-stone-900 text-base group-hover:text-amber-900 transition-colors">${p.name}</h3>
+                        <h3 class="font-bold text-stone-900 text-sm md:text-base group-hover:text-amber-900 transition-colors">${p.name}</h3>
                         <p class="text-xs text-stone-500 mt-1">${p.color}</p>
                     </div>
-                    <div class="mt-4 pt-3 border-t border-stone-200/60 flex items-center justify-between">
-                        <span class="text-amber-900 font-bold text-base">${p.price.toLocaleString()}원</span>
-                        <button onclick="askStylistAboutProduct('${p.name}')" class="p-2 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-900 hover:text-white transition-colors" title="AI 코디 문의">
-                            <i class="fa-solid fa-sparkles text-xs"></i>
+                    <div class="mt-3 md:mt-4 pt-3 border-t border-stone-200/60 flex items-center justify-between">
+                        <span class="text-amber-900 font-bold text-sm md:text-base">${p.price.toLocaleString()}원</span>
+                        <button onclick="addToCart(${p.id})" class="p-2.5 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-900 hover:text-white transition-all active:scale-90" title="장바구니 담기">
+                            <i class="fa-solid fa-cart-plus text-xs"></i>
                         </button>
                     </div>
                 `;
@@ -514,121 +650,119 @@
             if (modal) modal.classList.remove('active');
         }
 
-        // PCM16 to WAV conversion helper
-        function base64ToArrayBuffer(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        function pcmToWav(pcm16, sampleRate) {
-            const buffer = new ArrayBuffer(44 + pcm16.length * 2);
-            const view = new DataView(buffer);
-
-            /* RIFF identifier */
-            writeString(view, 0, 'RIFF');
-            /* RIFF chunk length */
-            view.setUint32(4, 36 + pcm16.length * 2, true);
-            /* RIFF type */
-            writeString(view, 8, 'WAVE');
-            /* format chunk identifier */
-            writeString(view, 12, 'fmt ');
-            /* format chunk length */
-            view.setUint32(16, 16, true);
-            /* sample format (raw PCM) */
-            view.setUint16(20, 1, true);
-            /* channel count (1 = mono) */
-            view.setUint16(22, 1, true);
-            /* sample rate */
-            view.setUint32(24, sampleRate, true);
-            /* byte rate (sampleRate * 2) */
-            view.setUint32(28, sampleRate * 2, true);
-            /* block align */
-            view.setUint16(32, 2, true);
-            /* bits per sample */
-            view.setUint16(34, 16, true);
-            /* data chunk identifier */
-            writeString(view, 36, 'data');
-            /* data chunk length */
-            view.setUint32(40, pcm16.length * 2, true);
-
-            for (let i = 0; i < pcm16.length; i++) {
-                view.setInt16(44 + i * 2, pcm16[i], true);
-            }
-
-            return new Blob([view], { type: 'audio/wav' });
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
         // ======================================================
-        // 5. Bespoke AI Studio 이미지 생성 (Image Generation)
+        // 5. 장바구니 기능 (Cart Functions)
         // ======================================================
-        // Gemini Imagen 4.0을 활용한 AI 이미지 생성
-        // 프리셋 프롬프트 설정 함수
-        function setPromptPreset(text) {
-            const promptBox = document.getElementById('ai-image-prompt');
-            if (promptBox) promptBox.value = text;
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-backdrop');
+            if (drawer && backdrop) {
+                drawer.classList.toggle('open');
+                backdrop.classList.toggle('open');
+            }
         }
 
-        // AI 이미지 생성 함수
-        async function generateCustomBagImage() {
-            const promptInput = document.getElementById('ai-image-prompt');
-            const resultBox = document.getElementById('ai-image-result-container');
-            const btnText = document.getElementById('gen-img-btn-text');
-            const userText = promptInput.value.trim() || "A luxury high-end leather bag showcase in Paris street background";
+        function addToCart(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
 
-            try {
-                btnText.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> AI 시안 생성 중...`;
-                resultBox.innerHTML = `
-                    <div class="flex flex-col items-center gap-3">
-                        <i class="fa-solid fa-wand-magic-sparkles text-3xl text-amber-500 animate-pulse"></i>
-                        <p class="text-xs text-stone-300">Gemini가 고급스러운 비주얼을 생성하고 있습니다...</p>
-                    </div>
-                `;
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
 
-                const payload = {
-                    instances: [{ prompt: `High-end luxury fashion photoshoot, ${userText}, cinematic lighting, photorealistic, 8k resolution` }],
-                    parameters: { sampleCount: 1 }
-                };
+            updateCartUI();
+            showToast(`'${product.name}' 장바구니에 담겼습니다.`);
 
-                const apiKey = "";
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+            // Bounce animation
+            const cartIcon = document.getElementById('cart-icon-btn');
+            if (cartIcon) {
+                cartIcon.classList.add('cart-bounce');
+                setTimeout(() => cartIcon.classList.remove('cart-bounce'), 400);
+            }
+        }
 
-                const result = await response.json();
-                if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
-                    const imgUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                    resultBox.innerHTML = `
-                        <img src="${imgUrl}" alt="AI Custom Bag" class="w-full h-full object-cover rounded-2xl shadow-lg">
-                        <div class="absolute bottom-3 right-3 flex gap-2">
-                            <a href="${imgUrl}" download="lumiere-custom-bag.png" class="px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs rounded-lg backdrop-blur flex items-center gap-1">
-                                <i class="fa-solid fa-download"></i> 다운로드
-                            </a>
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        }
+
+        function updateCartQuantity(productId, delta) {
+            const item = cart.find(item => item.id === productId);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) { removeFromCart(productId); return; }
+            updateCartUI();
+        }
+
+        function clearCart() {
+            cart = [];
+            updateCartUI();
+            showToast('장바구니가 비워졌습니다.');
+        }
+
+        function updateCartUI() {
+            const badge = document.getElementById('cart-badge');
+            const countText = document.getElementById('cart-count-text');
+            const itemsList = document.getElementById('cart-items-list');
+            const emptyState = document.getElementById('cart-empty');
+            const footer = document.getElementById('cart-footer');
+            const totalPrice = document.getElementById('cart-total-price');
+
+            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            if (badge) {
+                badge.textContent = totalItems;
+                badge.classList.toggle('hidden', totalItems === 0);
+            }
+            if (countText) countText.textContent = `${totalItems}개 상품`;
+
+            if (cart.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                if (itemsList) itemsList.innerHTML = '';
+                if (footer) footer.classList.add('hidden');
+            } else {
+                if (emptyState) emptyState.classList.add('hidden');
+                if (footer) footer.classList.remove('hidden');
+                if (totalPrice) totalPrice.textContent = `${totalAmount.toLocaleString()}원`;
+
+                if (itemsList) {
+                    itemsList.innerHTML = cart.map(item => `
+                        <div class="cart-item">
+                            <div class="w-12 h-12 md:w-14 md:h-14 ${item.bg} rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fa-solid fa-bag-shopping text-base md:text-lg text-stone-400/60"></i>
+                            </div>
+                            <div class="flex-grow min-w-0">
+                                <h4 class="text-xs md:text-sm font-semibold text-stone-900 truncate">${item.name}</h4>
+                                <p class="text-[11px] text-stone-500">${item.color}</p>
+                                <p class="text-xs md:text-sm font-bold text-amber-900 mt-0.5">${item.price.toLocaleString()}원</p>
+                            </div>
+                            <div class="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
+                                <button onclick="updateCartQuantity(${item.id}, -1)" class="cart-qty-btn">−</button>
+                                <span class="text-xs font-bold text-stone-800 w-5 text-center">${item.qty}</span>
+                                <button onclick="updateCartQuantity(${item.id}, 1)" class="cart-qty-btn">+</button>
+                                <button onclick="removeFromCart(${item.id})" class="ml-1 p-1.5 text-stone-400 hover:text-red-500 transition-colors">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
                         </div>
-                    `;
-                    showToast("성공적으로 AI 가방 비주얼 시안이 생성되었습니다!");
-                } else {
-                    throw new Error("No image data returned");
+                    `).join('');
                 }
-            } catch (err) {
-                console.error("Image Gen Error:", err);
-                resultBox.innerHTML = `
-                    <p class="text-xs text-red-400"><i class="fa-solid fa-circle-exclamation"></i> 이미지 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
-                `;
-            } finally {
-                btnText.innerText = "AI 디자인 컨셉 생성하기";
+            }
+        }
+
+        // ======================================================
+        // 6. 모바일 네비게이션 (Mobile Navigation)
+        // ======================================================
+        function toggleMobileNav() {
+            const overlay = document.getElementById('mobile-nav-overlay');
+            const panel = document.getElementById('mobile-nav-panel');
+            if (overlay && panel) {
+                overlay.classList.toggle('open');
+                panel.classList.toggle('open');
             }
         }
 
