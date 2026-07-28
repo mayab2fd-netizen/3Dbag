@@ -10,7 +10,7 @@
 HTML 파일을 브라우저에서 바로 열면 됩니다.
 
 ```
-lumi_re_premium_3d_bag_shop.html
+index.html
 ```
 
 > CORS 관련 이슈가 발생할 경우 로컬 서버를 사용하세요.
@@ -18,7 +18,7 @@ lumi_re_premium_3d_bag_shop.html
 ```bash
 # Python 3
 python -m http.server 8000
-# 접속: http://localhost:8000/lumi_re_premium_3d_bag_shop.html
+# 접속: http://localhost:8000/index.html
 ```
 
 ---
@@ -27,7 +27,7 @@ python -m http.server 8000
 
 ```
 3Dbag/
-├── lumi_re_premium_3d_bag_shop.html   # 메인 단일 파일 (HTML + CSS + JS)
+├── index.html                         # 메인 단일 파일 (HTML + CSS + JS)
 ├── models/
 │   └── sample.glb                     # 3D 모델 샘플
 └── README.md
